@@ -233,3 +233,28 @@ test("reload recovers pending approval and ignores idle historical completions",
   assert.equal(f.last.tasks[0].stage, "正在修改");
   await second.dispose();
 });
+
+test("unloading observer does not cancel or consume a pending user answer", async (t) => {
+  const f = await fixture(t),
+    agent = f.agent("A");
+  agent.session.append("turn/start", { turn: 1 });
+  const plugin = await f.mount();
+  let resolveAnswer;
+  const pending = f.ctx.waterfall(
+    scopeTarget(agent, agent),
+    "user-questions/request",
+    { agent, questions: [{ id: "answer" }] },
+    () =>
+      new Promise((resolve) => {
+        resolveAnswer = resolve;
+      }),
+  );
+  assert.equal(f.last.tasks[0].state, "input");
+  await plugin.dispose();
+  assert.equal(f.closes, 1);
+  const count = f.snapshots.length,
+    answer = { answers: [] };
+  resolveAnswer(answer);
+  assert.equal(await pending, answer);
+  assert.equal(f.snapshots.length, count);
+});

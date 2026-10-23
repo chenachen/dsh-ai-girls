@@ -39,3 +39,31 @@ test("spawn failure reports once and closes instead of leaving a live bridge", a
   assert.equal(errors, 1);
   await bridge.dispose();
 });
+
+test("backpressure sends the latest snapshot without replaying every intermediate state", async () => {
+  const seen = [];
+  let complete;
+  const done = new Promise((resolve) => {
+    complete = resolve;
+  });
+  const bridge = launchDesktop(process.execPath, {
+    args: [
+      "-e",
+      "require('node:readline').createInterface({input:process.stdin}).on('line',line=>process.stdout.write(JSON.stringify({revision:JSON.parse(line).revision})+'\\n'));",
+    ],
+    onMessage: (message) => {
+      seen.push(message.revision);
+      if (message.revision === 49) complete();
+    },
+    onError: (error) => {
+      throw error;
+    },
+  });
+  for (let revision = 0; revision < 50; revision++)
+    bridge.send({ revision, payload: "x".repeat(262144) });
+  await done;
+  await bridge.dispose();
+  assert.equal(seen[0], 0);
+  assert.equal(seen.at(-1), 49);
+  assert.ok(seen.length < 50);
+});
