@@ -21,9 +21,27 @@
 | [验收清单](docs/acceptance.md) | 最小化、多任务、状态、动画、桌面交互与退出清理 |
 | [素材接入说明](docs/assets.md) | 既有角色素材、文案迁移和版本选择 |
 | [协作约定](AGENTS.md) | 工作范围、Git 分支与验证要求 |
+| [桌面联调步骤](docs/manual-verification.md) | 安装、启动、最小化/遮挡验证与移除入口 |
+| [接口与通信](docs/architecture.md) | 已实现的模块职责、事件语义和本机通信 |
 
 ## 开发状态
 
-产品方案与基础配置已提交。第一阶段优先接通全局任务事件、独立桌面窗口和运行信息气泡，实际验证 DSH 最小化及被其他窗口覆盖后的表现。实现与验证进展记录在 [开发交接](docs/handoff-2026-10-23.md)。
+宿主级任务监听、执行状态聚合、独立 WPF 桌面窗口、标准输入输出通信和本地安装脚本已实现。运行中只展示执行事实。当前窗口使用 AI 图标占位，角色素材与点击跳转尚未接入。
+
+已完成状态/通信/安装自动化测试及基于本机 DSH 官方模块的无界面接入测试。最小化、遮挡、透明区域点击和实际 DSH Desktop 加载仍待桌面联调。详细结果见 [开发交接](docs/handoff-2026-10-23.md)。
+
+## 开始开发
+
+Windows，Node.js 22+，系统自带的 .NET Framework 4.x 编译器；无需安装 Electron 或第三方桌宠插件。
+
+```powershell
+npm ci
+npm test
+npm run test:host
+npm run build
+npm run doctor
+```
+
+`test:host` 使用本机已安装的 DSH 官方模块；非默认安装位置设置 `DSH_NODE_MODULES`。准备查看窗口时运行 `npm run demo`；接入 DSH 运行 `npm run install:local`，具体步骤见[桌面联调说明](docs/manual-verification.md)。
 
 仓库初始化日期：2026-10-23。

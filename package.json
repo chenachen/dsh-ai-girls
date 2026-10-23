@@ -1,0 +1,37 @@
+{
+  "name": "dsh-ai-girls",
+  "version": "0.1.0-dev.1",
+  "private": true,
+  "type": "module",
+  "description": "Independent DSH global task desktop companion",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "src",
+    "dist",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build-desktop.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:host": "node --test test/integration/*.test.mjs",
+    "demo": "node scripts/demo.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "install:local": "node scripts/install-local.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  }
+}
