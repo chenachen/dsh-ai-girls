@@ -33,6 +33,21 @@ test("projection rehydrates executing tool and pending approval without raw argu
   assert.equal(p.apply(state, { type: "user/message" }), state);
 });
 
+test("replay restores a waiting question summary without copying its options", () => {
+  let state = p.init({ id: "A" });
+  state = p.apply(state, { seq: 0, time: 1000, type: "turn/start", data: { turn: 1 } });
+  state = p.apply(state, { seq: 1, time: 1001, type: "tool/call", data: {
+    callId: "q", name: "ask_user_question", arguments: JSON.stringify({
+      questions: [{ question: "是否继续联调？", options: [{ label: "内部选项内容" }] }],
+    }),
+  } });
+  const store = new TaskStore();
+  store.restore(p.stateSchema.parse(JSON.parse(JSON.stringify(state))));
+  assert.equal(store.snapshot()[0].state, "input");
+  assert.equal(store.snapshot()[0].detail, "是否继续联调？");
+  assert.ok(!JSON.stringify(state).includes("内部选项内容"));
+});
+
 test("late results and previous-turn end cannot resurrect or terminate another turn", () => {
   const store = new TaskStore(),
     s = { id: "A" },

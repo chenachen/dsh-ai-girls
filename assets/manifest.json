@@ -1,0 +1,148 @@
+{
+  "version": "pet-motion-v5-native-final",
+  "frameWidth": 192,
+  "frameHeight": 208,
+  "columns": 8,
+  "rows": 11,
+  "characters": [
+    {
+      "id": "deepseek-normal",
+      "character": "deepseek",
+      "form": "normal",
+      "label": "DeepSeek 鲸鱼娘 · 常态",
+      "sha256": "f09f37259fd741e5f0956d1516090e4581ef368eb020c11c4268f3c55b8e0358"
+    },
+    {
+      "id": "deepseek-chibi",
+      "character": "deepseek",
+      "form": "chibi",
+      "label": "DeepSeek 鲸鱼娘 · Q 版",
+      "sha256": "36d306cdb4899d1d577b7271f4293345bbff01f02d66f9fbd91fa3bc00593905"
+    },
+    {
+      "id": "gpt-normal",
+      "character": "gpt",
+      "form": "normal",
+      "label": "GPT 龙娘 · 常态",
+      "sha256": "d0f2282e3d29bd25737e0b701a1b073bd8e892a4e27f7f77fd0b9f822e6be584"
+    },
+    {
+      "id": "gpt-chibi",
+      "character": "gpt",
+      "form": "chibi",
+      "label": "GPT 龙娘 · Q 版",
+      "sha256": "2c3802ef881671fd99a32ac8cc815fddebb32083bdd96b969f22f79ff3c4cc1c"
+    },
+    {
+      "id": "claude-normal",
+      "character": "claude",
+      "form": "normal",
+      "label": "Claude 娘 · 常态",
+      "sha256": "37da72f4924c48a665b598150e45c1429c6d0d65874061f3d69ba6fd4e935ffb"
+    },
+    {
+      "id": "claude-chibi",
+      "character": "claude",
+      "form": "chibi",
+      "label": "Claude 娘 · Q 版",
+      "sha256": "e4f95231979977b237b0a2ac31c48ba2284698806519a25f233560354b36907f"
+    },
+    {
+      "id": "grok-normal",
+      "character": "grok",
+      "form": "normal",
+      "label": "Grok 娘 · 常态",
+      "sha256": "bc3d298fda24c70035e6f71a5e25b7383a2d78c2e07b8101c0218359e35f18f0"
+    },
+    {
+      "id": "grok-chibi",
+      "character": "grok",
+      "form": "chibi",
+      "label": "Grok 娘 · Q 版",
+      "sha256": "e9a3a9d402af470b3652d12030ab5362dba5979749cc8d39b58a1073cddf39b3"
+    },
+    {
+      "id": "gemini-normal",
+      "character": "gemini",
+      "form": "normal",
+      "label": "Gemini 双子猫娘 · 常态",
+      "sha256": "07a59841ea806b7af4c731cb0737d8321a652a1d2df15119b8f7fd21ea5bf542"
+    },
+    {
+      "id": "gemini-chibi",
+      "character": "gemini",
+      "form": "chibi",
+      "label": "Gemini 双子猫娘 · Q 版",
+      "sha256": "a0e716e0237cd7a65054ad8b4a5375b540488e7ecfc3de10ced488cb8b1b6bd3"
+    }
+  ],
+  "animations": {
+    "idle": {
+      "row": 0,
+      "durations": [
+        1680,
+        660,
+        660,
+        840,
+        840,
+        1920
+      ]
+    },
+    "running": {
+      "row": 7,
+      "durations": [
+        120,
+        120,
+        120,
+        120,
+        120,
+        220
+      ]
+    },
+    "waiting": {
+      "row": 6,
+      "durations": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        260
+      ]
+    },
+    "completed": {
+      "row": 4,
+      "durations": [
+        140,
+        140,
+        140,
+        140,
+        280
+      ]
+    },
+    "failed": {
+      "row": 5,
+      "durations": [
+        140,
+        140,
+        140,
+        140,
+        140,
+        140,
+        140,
+        240
+      ]
+    },
+    "stopped": {
+      "row": 8,
+      "durations": [
+        150,
+        150,
+        150,
+        150,
+        150,
+        280
+      ]
+    }
+  }
+}

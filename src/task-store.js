@@ -65,7 +65,7 @@ export function executionInfo(name, rawArguments) {
     );
   return {
     stage: waiting ? "等待输入" : stage,
-    detail: short(detail),
+    detail: short(waiting ? args.questions?.[0]?.question || detail : detail),
     waiting,
   };
 }

@@ -1,4 +1,6 @@
 import { startHost } from "./host-runtime.js";
+import { Config } from "./config.js";
+export { Config };
 export const name = "dsh-ai-girls";
 export const inject = [
   "sessions",
@@ -9,4 +11,4 @@ export const inject = [
 export function apply(ctx, config = {}) {
   startHost(ctx, config);
 }
-export default { name, inject, apply };
+export default { name, inject, Config, apply };

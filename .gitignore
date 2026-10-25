@@ -16,6 +16,10 @@ obj/
 work/
 LOCAL_SETUP.md
 *.log
+*.tmp
+*.bak
+*.swp
+*~
 .DS_Store
 Thumbs.db
 Desktop.ini

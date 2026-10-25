@@ -32,7 +32,7 @@ const [
   ].map(load),
 );
 
-async function fixture(t) {
+async function fixture(t, platform = "win32") {
   const ctx = new Context();
   t.after(() => ctx.fiber.dispose());
   for (const [plugin, config] of [
@@ -61,7 +61,7 @@ async function fixture(t) {
     launches = 0,
     options;
   const runtime = {
-    platform: "win32",
+    platform,
     existsSync: () => true,
     launchDesktop: (_exe, callbacks) => {
       launches++;
@@ -122,6 +122,17 @@ async function fixture(t) {
   };
 }
 
+test("macOS launches the native panel and disposes it with the plugin", async (t) => {
+  const f = await fixture(t, "darwin");
+  const agent = f.agent("macOS");
+  agent.session.append("turn/start", { turn: 1 });
+  const plugin = await f.mount();
+  assert.equal(f.launches, 1);
+  assert.equal(f.last.tasks[0].state, "running");
+  await plugin.dispose();
+  assert.equal(f.closes, 1);
+});
+
 test("actual Cordis startup replays current tools; global session changes and unload work", async (t) => {
   const f = await fixture(t),
     a = f.agent("A"),
@@ -177,10 +188,11 @@ test("question observer preserves answer/errors and remains scoped to the suppli
   const pending = f.ctx.waterfall(
     scopeTarget(a, a),
     "user-questions/request",
-    { agent: a, questions: [{ id: "color" }] },
+    { agent: a, questions: [{ id: "color", question: "选择一个颜色？" }] },
     () => new Promise((r) => (resolveAnswer = r)),
   );
   assert.equal(f.last.tasks.find((x) => x.id === "A").state, "input");
+  assert.equal(f.last.tasks.find((x) => x.id === "A").detail, "选择一个颜色？");
   assert.equal(f.last.tasks.find((x) => x.id === "B").state, "running");
   resolveAnswer(answer);
   assert.equal(await pending, answer);

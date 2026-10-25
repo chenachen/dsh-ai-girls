@@ -1,9 +1,11 @@
-import { fileURLToPath } from "node:url";
 import { TaskStore } from "../src/task-store.js";
 import { launchDesktop } from "../src/desktop-bridge.js";
+import { desktopExecutable } from "../src/desktop-path.js";
+import { Companion } from "../src/companion.js";
 
 // Synthetic fixtures: verify the native window without invoking a model.
 const store = new TaskStore();
+const companion = new Companion();
 const a = { id: "demo-a", header: {} },
   b = { id: "demo-b", header: {} };
 let seqA = 0,
@@ -15,9 +17,10 @@ const emit = (s, type, data) =>
     s === a ? "联调样例 A（合成事件）" : "联调样例 B（合成事件）",
   );
 const bridge = launchDesktop(
-  fileURLToPath(new URL("../dist/AiGirls.Desktop.exe", import.meta.url)),
+  desktopExecutable(),
   {
     onMessage: (m) => {
+      if (m.type === "preferences") companion.update(m.patch);
       if (
         m.type === "ready" ||
         (m.type === "rendered" && m.revision % 10 === 0)
@@ -37,13 +40,16 @@ emit(a, "tool/call", {
   arguments: JSON.stringify({ path: "README.md" }),
 });
 emit(b, "tool/call", { callId: "search-b", name: "search", arguments: "{}" });
-const publish = () =>
+const publish = () => {
+  const tasks = store.snapshot();
   bridge.send({
     type: "snapshot",
     protocol: 1,
     hostPid: process.pid,
-    tasks: store.snapshot(),
+    tasks,
+    companion: companion.snapshot(tasks),
   });
+};
 const timer = setInterval(publish, 1000);
 publish();
 setTimeout(() => {

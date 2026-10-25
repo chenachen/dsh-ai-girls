@@ -1,13 +1,19 @@
-import { fileURLToPath } from "node:url";
 import { existsSync } from "node:fs";
-import { TaskStore } from "./task-store.js";
+import { TaskStore, short } from "./task-store.js";
 import { executionProjection, projectionKey } from "./execution-projection.js";
 import { launchDesktop } from "./desktop-bridge.js";
+import { desktopExecutable } from "./desktop-path.js";
+import { Companion } from "./companion.js";
+import { createPreferenceBinding } from "./preference-binding.js";
+import { createNavigation } from "./navigation.js";
 
 // Injectable dependencies let integration tests run without opening a desktop window.
 export function startHost(ctx, config = {}, runtime = {}) {
   const launch = runtime.launchDesktop ?? launchDesktop;
   const store = new TaskStore();
+  const preferences = createPreferenceBinding(ctx, config, runtime);
+  const companion = new Companion(preferences.initial, { save: preferences.save });
+  const navigate = createNavigation(ctx);
   let bridge,
     timer,
     lastPayload,
@@ -17,11 +23,15 @@ export function startHost(ctx, config = {}, runtime = {}) {
   const title = (session) => ctx.sessionProjections.stateOf(session, "title");
   const publish = (force = false) => {
     if (!bridge || stopped) return;
+    const updatedPreferences = preferences.read();
+    if (updatedPreferences) companion.update(updatedPreferences);
+    const tasks = store.snapshot();
     const snapshot = {
       type: "snapshot",
       protocol: 1,
       hostPid: process.pid,
-      tasks: store.snapshot(),
+      tasks,
+      companion: companion.snapshot(tasks),
     };
     const payload = JSON.stringify(snapshot);
     if (force || payload !== lastPayload) {
@@ -53,7 +63,7 @@ export function startHost(ctx, config = {}, runtime = {}) {
       store.question(
         session,
         token,
-        `${request.questions.length} 个问题待回答`,
+        short(request.questions[0]?.question) || `${request.questions.length} 个问题待回答`,
       );
       publish();
       try {
@@ -71,15 +81,10 @@ export function startHost(ctx, config = {}, runtime = {}) {
       clearInterval(timer);
       await bridge?.dispose();
     };
-    if (
-      stopped ||
-      started ||
-      (runtime.platform ?? process.platform) !== "win32"
-    )
-      return cleanup;
     const executable =
       config.executable ??
-      fileURLToPath(new URL("../dist/AiGirls.Desktop.exe", import.meta.url));
+      desktopExecutable(runtime.platform ?? process.platform);
+    if (stopped || started || !executable) return cleanup;
     if (!(runtime.existsSync ?? existsSync)(executable)) {
       ctx.logger.warn("AI 娘桌面程序未构建，请运行 npm run build。");
       return cleanup;
@@ -98,6 +103,11 @@ export function startHost(ctx, config = {}, runtime = {}) {
     bridge = launch(executable, {
       onMessage(message) {
         if (message.type === "ready") publish(true);
+        if (message.type === "preferences" && message.patch && typeof message.patch === "object") {
+          try { companion.update(message.patch); publish(true); }
+          catch (error) { ctx.logger.warn("AI 娘偏好保存失败：%s", error.message); }
+        }
+        if (message.type === "navigate" && store.snapshot().some((task) => task.id === message.sessionId)) navigate(message.sessionId);
       },
       onError(error) {
         ctx.logger.warn("AI 娘桌面连接：%s", error.message);

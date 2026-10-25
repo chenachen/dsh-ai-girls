@@ -1,0 +1,57 @@
+{
+  "deepseek": {
+    "name": "DeepSeek",
+    "symbol": "≈",
+    "accent": "5266B5",
+    "soft": "E9EEFF",
+    "surface": "FCFDFF",
+    "bottom": "EDF2FF",
+    "border": "C4D1F2",
+    "ink": "34415F",
+    "muted": "687691"
+  },
+  "gpt": {
+    "name": "GPT",
+    "symbol": "◇",
+    "accent": "75629F",
+    "soft": "F0EAF9",
+    "surface": "FFFDFF",
+    "bottom": "F3EDF9",
+    "border": "D8CBEA",
+    "ink": "4B405E",
+    "muted": "7D6D8C"
+  },
+  "claude": {
+    "name": "Claude",
+    "symbol": "✿",
+    "accent": "A45C3F",
+    "soft": "FBE9DE",
+    "surface": "FFFDFA",
+    "bottom": "FFF0E5",
+    "border": "EBCDBB",
+    "ink": "63473C",
+    "muted": "886D60"
+  },
+  "grok": {
+    "name": "Grok",
+    "symbol": "✧",
+    "accent": "876332",
+    "soft": "F4EAD4",
+    "surface": "FFFDF7",
+    "bottom": "F6EEDC",
+    "border": "DFCCAA",
+    "ink": "514535",
+    "muted": "806E54"
+  },
+  "gemini": {
+    "name": "Gemini",
+    "symbol": "✦",
+    "accent": "7653B2",
+    "soft": "EFE5FD",
+    "surface": "FEFCFF",
+    "bottom": "F2EAFE",
+    "border": "D9C4F0",
+    "ink": "51416B",
+    "muted": "7E6B92"
+  }
+}

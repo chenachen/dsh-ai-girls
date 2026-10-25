@@ -67,9 +67,10 @@ test("waiting for input is factual and clears on tool result", () => {
   emit(a, "tool/call", {
     callId: "q",
     name: "ask_user_question",
-    arguments: "{}",
+    arguments: '{"questions":[{"question":"是否继续联调？"}]}',
   });
   assert.equal(store.snapshot()[0].state, "input");
+  assert.equal(store.snapshot()[0].detail, "是否继续联调？");
   emit(a, "tool/result", { message: { toolCallId: "q" } });
   assert.equal(store.snapshot()[0].state, "running");
 });

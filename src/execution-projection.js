@@ -36,7 +36,7 @@ const stateSchema = z.object({
 // Host owns replay/checkpoints. Keep execution metadata, never model text or tool arguments.
 export const executionProjection = {
   key: projectionKey,
-  stateVersion: 2,
+  stateVersion: 3,
   stateSchema,
   init(header) {
     const store = new TaskStore();

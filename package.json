@@ -3,19 +3,47 @@
   "version": "0.1.0-dev.1",
   "private": true,
   "type": "module",
-  "description": "Independent DSH global task desktop companion",
+  "description": "桌面 AI 娘陪伴：全局任务气泡、十种角色形态与持续动画",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenachen/dsh-ai-girls.git"
+  },
+  "homepage": "https://github.com/chenachen/dsh-ai-girls#readme",
+  "bugs": {
+    "url": "https://github.com/chenachen/dsh-ai-girls/issues"
+  },
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
-    "./cordis.patch.yml": "./cordis.patch.yml"
+    "./client": "./src/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "files": [
     "src",
-    "dist",
+    "assets",
+    "dist/AiGirls.Desktop.app",
+    "dist/AiGirls.Desktop.exe",
+    "dist/assets",
+    "dist/LICENSE",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "docs",
+    "locale"
   ],
   "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-workspace",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-plugin-manager"
+      ]
+    },
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
@@ -23,15 +51,17 @@
   "scripts": {
     "build": "node scripts/build-desktop.mjs",
     "test": "node --test test/*.test.mjs",
-    "test:host": "node --test test/integration/*.test.mjs",
+    "test:host": "node scripts/test-host.mjs",
+    "test:native": "node scripts/test-native.mjs",
     "demo": "node scripts/demo.mjs",
-    "doctor": "node scripts/doctor.mjs",
-    "install:local": "node scripts/install-local.mjs"
+    "doctor": "node scripts/doctor.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "@deepseek-ai/schemastery": "3.18.5",
     "zod": "4.4.3"
-  }
+  },
+  "icon": "./assets/icon.svg"
 }
