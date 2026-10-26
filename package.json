@@ -1,6 +1,6 @@
 {
   "name": "dsh-ai-girls",
-  "version": "0.1.0-dev.1",
+  "version": "0.1.0-dev.2",
   "private": true,
   "type": "module",
   "description": "桌面 AI 娘陪伴：全局任务气泡、十种角色形态与持续动画",
@@ -49,10 +49,14 @@
     }
   },
   "scripts": {
+    "prepare": "node scripts/build-desktop.mjs",
     "build": "node scripts/build-desktop.mjs",
+    "package": "node scripts/package-release.mjs",
+    "test:package": "node scripts/test-package.mjs",
     "test": "node --test test/*.test.mjs",
     "test:host": "node scripts/test-host.mjs",
     "test:native": "node scripts/test-native.mjs",
+    "test:windows": "node scripts/test-windows-desktop.mjs",
     "demo": "node scripts/demo.mjs",
     "doctor": "node scripts/doctor.mjs"
   },

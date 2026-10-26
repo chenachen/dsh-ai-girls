@@ -28,14 +28,27 @@
 
 ## 安装
 
-当前通过源码构建并安装本地目录。在目标系统上执行：
+### 预构建安装包（无需编译环境）
+
+在 [Releases](https://github.com/chenachen/dsh-ai-girls/releases) 选择系统对应的完整插件包：Windows 使用 `*-win32.tgz`；Apple Silicon Mac 使用 `*-darwin-arm64.tgz`；Intel Mac 使用 `*-darwin-x64.tgz`。不要选择 GitHub 自动生成的 Source code 压缩包。
+
+在 DSH「插件 → 添加插件」中粘贴该 `.tgz` 的下载地址，或者下载后填写文件的绝对路径。DSH 安装 JavaScript 依赖，包内已包含桌面程序与十种角色素材，无需运行构建脚本。安装完成后启用插件。
+
+### 直接从 GitHub 源码安装
+
+添加 `github:chenachen/dsh-ai-girls`。安装时 `prepare` 自动构建当前平台的桌面程序，需要上方的原生编译环境。pnpm 若提示构建脚本未授权，请把错误详情中打印的**完整包键（含 Git 地址与提交号）**加入该 profile 的 `pnpm-workspace.yaml` 的 `allowBuilds`，再重试；只写 `dsh-ai-girls: true` 对当前 pnpm 的 Git 安装不够。不需要编译环境或构建授权时使用上面的预构建安装包。
+
+### 本地开发安装
+
+在目标系统上执行：
 
 ```sh
 git clone https://github.com/chenachen/dsh-ai-girls.git
 cd dsh-ai-girls
 npm ci
-npm run build
 ```
+
+`npm ci` 会通过 `prepare` 构建桌面程序。使用了 `--ignore-scripts` 时再手动运行 `npm run build`。更新已运行的插件前先在 DSH 中停用它，避免 Windows 锁定旧的可执行文件。
 
 构建生成 macOS 的 `dist/AiGirls.Desktop.app` 或 Windows 的 `dist/AiGirls.Desktop.exe` 及配套素材。
 
@@ -43,7 +56,7 @@ npm run build
 2. 输入本仓库的**绝对路径**，安装后点击「立即启用」。
 3. 在「设置 → AI 娘值班室」或插件详情中配置角色与显示选项。
 
-本地安装链接仓库目录，使用期间请保留目录位置和构建产物。更新源码后重新运行 `npm ci`、`npm run build`，并在当前任务结束后重启 DSH。
+本地安装链接仓库目录，使用期间请保留目录位置和构建产物。更新源码后重新运行 `npm ci`，并在当前任务结束后重启 DSH。
 
 ## 使用
 
@@ -62,7 +75,12 @@ npm test              # 状态、通信、角色策略、导航与配置测试
 npm run build         # 构建当前系统的原生程序
 npm run test:host     # 使用已安装的 DSH 官方模块执行接入测试
 npm run doctor        # 检查编译器、构建产物、DSH 模块和安装信息
+npm run test:windows  # Windows 原生进程验证十种角色与当前显示器边界
+npm run package       # 将当前平台构建结果打包为可安装的完整插件 .tgz
+npm run test:package  # 在临时空目录禁用构建脚本安装并验证发布包
 ```
+
+推送与 `package.json` 版本一致的 `v<版本>` tag 后，CI 分别构建 Windows、macOS arm64/x64，验证完整插件包后发布到 GitHub Releases。普通分支的同一套校验只上传 Actions artifact。发布包不包含安装生命周期脚本。
 
 macOS 构建后可运行 `npm run test:native` 检查图集透明像素命中；`npm run demo` 会打开约 65 秒的合成任务演示窗口，不调用模型。真实桌面行为按[手动验证步骤](docs/manual-verification.md)检查。
 
