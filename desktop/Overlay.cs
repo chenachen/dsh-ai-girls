@@ -63,6 +63,11 @@ public sealed class Overlay : Window
     [DllImport("user32.dll", EntryPoint="GetWindowLong")] static extern int GetWindowLong(IntPtr window, int index);
     [DllImport("user32.dll", EntryPoint="SetWindowLong")] static extern int SetWindowLong(IntPtr window, int index, int value);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr window, uint flags);
+    [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
+    [StructLayout(LayoutKind.Sequential)] struct NativeRect { public int Left, Top, Right, Bottom; }
+    [StructLayout(LayoutKind.Sequential)] struct MonitorInfo { public int Size; public NativeRect Monitor, Work; public uint Flags; }
 
     [STAThread]
     public static void Main()
@@ -81,7 +86,7 @@ public sealed class Overlay : Window
         Left = SystemParameters.WorkArea.Right - Width - 28; Top = SystemParameters.WorkArea.Bottom - 260;
         LoadPosition();
         var root = new StackPanel { Margin = new Thickness(8), Background = null };
-        bubbleWrap = new Grid {Width=320,HorizontalAlignment=HorizontalAlignment.Right};
+        bubbleWrap = new Grid {Width=320,HorizontalAlignment=HorizontalAlignment.Right,Visibility=Visibility.Collapsed};
         bubble = new Border { BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(22), Padding = new Thickness(15,13,15,12), Margin=new Thickness(0,0,0,12) };
         bubbleTail = new System.Windows.Shapes.Path {Data=Geometry.Parse("M0,0 C7,4 10,8 10,12 C16,11 22,6 24,0"),StrokeThickness=1,Width=24,Height=13,HorizontalAlignment=HorizontalAlignment.Right,VerticalAlignment=VerticalAlignment.Bottom,Margin=new Thickness(0,0,72,0)};
         var body = new StackPanel();
@@ -103,7 +108,7 @@ public sealed class Overlay : Window
         expand = FlatButton("",11);expand.HorizontalAlignment=HorizontalAlignment.Left;expand.Padding=new Thickness(0,5,0,0);
         expand.Click += delegate { expanded=!expanded; Render(); };
         body.Children.Add(expand); bubble.Child = body; bubbleWrap.Children.Add(bubble);bubbleWrap.Children.Add(bubbleTail);root.Children.Add(bubbleWrap);
-        orb = new Border { Width = 192, Height = 208, Margin = new Thickness(0,-28,0,0), HorizontalAlignment = HorizontalAlignment.Right,
+        orb = new Border { Width = 192, Height = 208, Margin = new Thickness(0), HorizontalAlignment = HorizontalAlignment.Right,
             Background = null, Cursor = Cursors.SizeAll, Child = sprite };
         orb.ToolTip = "拖动角色调整位置；右键打开角色与显示设置";
         orb.MouseLeftButtonDown += Drag;
@@ -120,6 +125,7 @@ public sealed class Overlay : Window
             handle = new WindowInteropHelper(this).Handle;
             SetWindowLong(handle,-20,GetWindowLong(handle,-20) | 0x08000080); // NOACTIVATE | TOOLWINDOW
             HwndSource.FromHwnd(handle).AddHook(WndProc);
+            Dispatcher.BeginInvoke(new Action(Clamp), DispatcherPriority.Loaded);
         };
         Loaded += delegate { Clamp(); Emit(new {type="ready"}); StartReader(); };
         SizeChanged += delegate(object sender,SizeChangedEventArgs e) { if(e.PreviousSize.Height>0) Top+=e.PreviousSize.Height-e.NewSize.Height; Clamp(); };
@@ -196,8 +202,16 @@ public sealed class Overlay : Window
         }
         if (Str(companion,"line")!="") {var line=Text(Str(companion,"line"),13,T("ink"));line.Margin=new Thickness(8,3,8,8);cards.Children.Add(line);}
         UpdateElapsed();
-        Emit(new {type="rendered",revision=revision,count=tasks.Length,active=active,topmost=Topmost,
-            visible=handle != IntPtr.Zero && IsWindowVisible(handle),foreground=GetForegroundWindow().ToInt64(),window=handle.ToInt64()});
+        Dispatcher.BeginInvoke(new Action(delegate {
+            NativeRect bounds;
+            var info = new MonitorInfo { Size = Marshal.SizeOf(typeof(MonitorInfo)) };
+            bool measured = GetWindowRect(handle, out bounds) && GetMonitorInfo(MonitorFromWindow(handle, 2), ref info);
+            Emit(new {type="rendered",revision=revision,count=tasks.Length,active=active,topmost=Topmost,
+                visible=handle != IntPtr.Zero && IsWindowVisible(handle),foreground=GetForegroundWindow().ToInt64(),window=handle.ToInt64(),
+                character=spriteId,spriteVisible=sprite.IsVisible && sprite.Source!=null && sprite.ActualWidth>0 && sprite.ActualHeight>0,
+                frameCount=frames.Length,measured=measured,
+                bounds=new[]{bounds.Left,bounds.Top,bounds.Right,bounds.Bottom},workArea=new[]{info.Work.Left,info.Work.Top,info.Work.Right,info.Work.Bottom}});
+        }), DispatcherPriority.ContextIdle);
     }
 
     static bool NeedsAttention(Dictionary<string,object> task) { var state=Str(task,"state"); return state=="approval" || state=="input"; }
@@ -325,7 +339,27 @@ public sealed class Overlay : Window
     static TextBlock Text(string text, double size, string color) { return new TextBlock {Text=text,FontSize=size,Foreground=Color(color),Margin=new Thickness(0,2,0,2),TextWrapping=TextWrapping.Wrap}; }
     static void Emit(object message) { try { Output.WriteLine(new JavaScriptSerializer().Serialize(message)); } catch(IOException) {} }
     void Drag(object sender, MouseButtonEventArgs e) { if(e.ChangedButton==MouseButton.Left && e.LeftButton==MouseButtonState.Pressed) { DragMove(); Clamp(); SavePosition(); } }
-    void Clamp() { Left=Math.Max(SystemParameters.VirtualScreenLeft,Math.Min(Left,SystemParameters.VirtualScreenLeft+SystemParameters.VirtualScreenWidth-Width)); Top=Math.Max(SystemParameters.VirtualScreenTop,Math.Min(Top,SystemParameters.VirtualScreenTop+SystemParameters.VirtualScreenHeight-Math.Max(ActualHeight,100))); }
+    void Clamp()
+    {
+        // A virtual-desktop bounding rectangle includes gaps below shorter
+        // monitors. Clamp in physical pixels to the nearest monitor's work area.
+        NativeRect bounds;
+        var info = new MonitorInfo { Size = Marshal.SizeOf(typeof(MonitorInfo)) };
+        var source = handle == IntPtr.Zero ? null : HwndSource.FromHwnd(handle);
+        if (source == null || source.CompositionTarget == null || !GetWindowRect(handle, out bounds) ||
+            !GetMonitorInfo(MonitorFromWindow(handle, 2), ref info)) return;
+        var transform = source.CompositionTarget.TransformToDevice;
+        var maxSize = source.CompositionTarget.TransformFromDevice.Transform(new Vector(info.Work.Right-info.Work.Left, info.Work.Bottom-info.Work.Top));
+        MaxHeight = Math.Max(250, maxSize.Y-16);
+        taskScroll.MaxHeight = Math.Max(80, Math.Min(420, MaxHeight-orb.Height-120));
+        // During SizeChanged GetWindowRect may still contain the preceding size.
+        var size = transform.Transform(new Vector(ActualWidth, ActualHeight));
+        double x = Math.Max(info.Work.Left, Math.Min(bounds.Left, info.Work.Right-size.X));
+        double y = Math.Max(info.Work.Top, Math.Min(bounds.Top, info.Work.Bottom-size.Y));
+        var delta = source.CompositionTarget.TransformFromDevice.Transform(new Vector(x-bounds.Left,y-bounds.Top));
+        if (Math.Abs(delta.X)>0.5) Left += delta.X;
+        if (Math.Abs(delta.Y)>0.5) Top += delta.Y;
+    }
     void LoadPosition() { try { if(File.Exists(settingsPath)) { var xy=File.ReadAllLines(settingsPath); double x,y; if(xy.Length>=2 && Double.TryParse(xy[0],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out x) && Double.TryParse(xy[1],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out y) && !Double.IsNaN(x) && !Double.IsNaN(y) && !Double.IsInfinity(x) && !Double.IsInfinity(y)) { Left=x;Top=y; } } } catch(IOException) {} }
     void SavePosition() { try { Directory.CreateDirectory(Path.GetDirectoryName(settingsPath)); File.WriteAllLines(settingsPath,new[]{Left.ToString(System.Globalization.CultureInfo.InvariantCulture),Top.ToString(System.Globalization.CultureInfo.InvariantCulture)}); } catch(IOException) {} }
 }
