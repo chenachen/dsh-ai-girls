@@ -61,6 +61,7 @@ execFileSync(
     "/out:" + resolve(root, "dist/AiGirls.Desktop.exe"),
     ...references.map((p) => "/reference:" + join(framework, p)),
     resolve(root, "desktop/Overlay.cs"),
+    resolve(root, "desktop/CompanionMenu.cs"),
   ],
   { stdio: "inherit" },
 );

@@ -17,7 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.Windows.Threading;
 
-public sealed class Overlay : Window
+public sealed partial class Overlay : Window
 {
     static readonly StreamReader Input = new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false));
     static readonly StreamWriter Output = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
@@ -118,6 +118,7 @@ public sealed class Overlay : Window
         characterButton.Width = 192; characterButton.Height = 26;
         characterButton.FontSize=10;characterButton.Template=ButtonTemplate();characterButton.BorderThickness = new Thickness(1);
         characterButton.Click += delegate { ShowMenu(); };
+        PreviewKeyDown += delegate(object sender,KeyEventArgs e) { if(e.Key==Key.Escape) CloseMenu(); };
         root.Children.Add(orb); root.Children.Add(characterButton); Content = root;
         animationClock.Interval = TimeSpan.FromMilliseconds(33);
         animationClock.Tick += delegate { Animate(); }; animationClock.Start();
@@ -129,7 +130,7 @@ public sealed class Overlay : Window
         };
         Loaded += delegate { Clamp(); Emit(new {type="ready"}); StartReader(); };
         SizeChanged += delegate(object sender,SizeChangedEventArgs e) { if(e.PreviousSize.Height>0) Top+=e.PreviousSize.Height-e.NewSize.Height; Clamp(); };
-        Closing += delegate { receiving=false; clock.Stop(); animationClock.Stop(); SavePosition(); };
+        Closing += delegate { CloseMenu(); receiving=false; clock.Stop(); animationClock.Stop(); SavePosition(); };
         clock.Interval = TimeSpan.FromSeconds(1); clock.Tick += delegate { UpdateElapsed(); }; clock.Start();
     }
 
@@ -172,6 +173,7 @@ public sealed class Overlay : Window
         cards.Children.Clear();
         elapsed.Clear();
         ConfigureCharacter();
+        RefreshMenu();
         var active = tasks.Count(t => Active(Str(t,"state")));
         heading.Text=theme["name"];heading.Foreground=Color(T("ink"));
         subtitle.Text=tasks.Length==0 ? "陪你歇一会儿" : active>0 ? "全局任务 · "+active+" 项进行中" : "本轮结果";subtitle.Foreground=Color(T("muted"));
@@ -295,35 +297,6 @@ public sealed class Overlay : Window
         while(index<durations.Length-1 && time>=durations[index]) {time-=durations[index];index++;}
         if(index!=spriteFrame) {spriteFrame=index;sprite.Source=frames[index];}
     }
-    MenuItem PreferenceItem(string title, object patch, bool selected)
-    {
-        var item=new MenuItem {Header=title,IsCheckable=true,IsChecked=selected};
-        item.Click+=delegate {Emit(new {type="preferences",patch=patch});}; return item;
-    }
-    void ShowMenu()
-    {
-        var menu=new ContextMenu(); object raw;
-        if(companion.TryGetValue("options",out raw)) foreach(var option in ((IEnumerable)raw).Cast<object>().OfType<Dictionary<string,object>>()) {
-            var id=Str(option,"id"); menu.Items.Add(PreferenceItem(Str(option,"label"),new {id=id,mode="fixed"},id==Str(companion,"id")));
-        }
-        menu.Items.Add(new Separator());
-        var modes=new[]{"fixed","sequential","favorites","random"}; var labels=new[]{"固定当前角色","顺序轮换","收藏轮换","随机轮换"};
-        for(int i=0;i<modes.Length;i++) menu.Items.Add(PreferenceItem(labels[i],new {mode=modes[i]},Str(companion,"mode")==modes[i]));
-        var favorites=companion.TryGetValue("favorites",out raw) ? ((IEnumerable)raw).Cast<object>().Select(Convert.ToString).ToList() : new List<string>();
-        bool favorite=favorites.Contains(spriteId); if(favorite)favorites.Remove(spriteId);else favorites.Add(spriteId);
-        menu.Items.Add(PreferenceItem(favorite ? "取消收藏当前形态" : "收藏当前形态",new {favorites=favorites.ToArray()},false));
-        var interval=new MenuItem {Header="轮换间隔"};
-        foreach(var seconds in new[]{5,10,30,60,300,900}) interval.Items.Add(PreferenceItem(seconds+" 秒",new {rotationSeconds=seconds},Str(companion,"rotationSeconds")==seconds.ToString()));
-        menu.Items.Add(interval);
-        var size=new MenuItem {Header="角色大小"};
-        foreach(var scale in new[]{0.75,1.0,1.25,1.5}) size.Items.Add(PreferenceItem((int)(scale*100)+"%",new {scale=scale},companion.TryGetValue("scale",out raw) && Convert.ToDouble(raw)==scale));
-        menu.Items.Add(size);menu.Items.Add(new Separator());
-        var toggle=new MenuItem {Header=bubbleHidden ? "显示任务气泡" : "隐藏任务气泡"};toggle.Click+=delegate {bubbleHidden=!bubbleHidden;Emit(new {type="preferences",patch=new {bubbleHidden=bubbleHidden}});Render();};menu.Items.Add(toggle);
-        var reset=new MenuItem {Header="恢复到主屏右下角"};reset.Click+=delegate {Left=SystemParameters.WorkArea.Right-Width-28;Top=SystemParameters.WorkArea.Bottom-ActualHeight-30;Clamp();SavePosition();};menu.Items.Add(reset);
-        var close=new MenuItem {Header="关闭桌宠"};close.Click+=delegate {Close();};menu.Items.Add(close);
-        menu.PlacementTarget=characterButton;menu.IsOpen=true;
-    }
-
     static bool Active(string state) { return state=="running" || state=="approval" || state=="input"; }
     string T(string key) { return "#"+theme[key]; }
     static ControlTemplate ButtonTemplate()
